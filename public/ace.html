@@ -9,29 +9,45 @@
             overflow: hidden;
         }
 
-        #editor {
-            margin: 0;
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            right: 0;
+        #editorJS {
+            height: 300px;
         }
     </style>
+    <script src="http://tsd-kraynovdo:8080/socket.io/socket.io.js"></script>
 </head>
 <body>
-
-<pre id="editor">Hello World!</pre>
+JS
+<div id="editorJS">(function(){})()</div>
 
 <script src="ace-min/ace.js" type="text/javascript" charset="utf-8"></script>
 <script>
-    var editor = ace.edit("editor");
-    <!-- editor.getSession().setMode("ace/mode/javascript");-->
-    editor.getSession().on('change', function(e) {
-        console.log(e.data.action);
-        console.log(e.data.range);
-        console.log(e.data.text);
+    //сокет
+    var socket;
+    // Создаем соединение с сервером; websockets почему-то в Хроме не работают, используем xhr
+    if (navigator.userAgent.toLowerCase().indexOf('chrome') != -1) {
+        socket = io.connect('http://tsd-kraynovdo:8080', {'transports': ['xhr-polling']});
+    } else {
+        socket = io.connect('http://tsd-kraynovdo:8080');
+    }
+    socket.on('connect', function () {
+        socket.on('message', function (msg) {
+            console.log(unescape(JSON.stringify(msg)));
+        });
     });
+
+
+    var editor = ace.edit("editorJS");
+    editor.getSession().setMode("ace/mode/javascript");
+    editor.getSession().on('change', function(e) {
+        var obj = {
+            action : e.data.action,
+            range : e.data.range,
+            text : escape(e.data.text)
+        };
+        socket.send(JSON.stringify(obj));
+    });
+    /*сокет*/
+
 </script>
 
 </body>
